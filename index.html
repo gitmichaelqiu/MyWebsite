@@ -131,7 +131,7 @@
             transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .connect-card:hover {
-            border-color: var(--klein-blue);
+            border-color: var(--klein-blue); 
             transform: translateY(-8px) scale(1.01);
             box-shadow: 0 30px 60px -15px rgba(0, 47, 167, 0.2);
             z-index: 20;
@@ -369,7 +369,8 @@
 
         <main class="transition-all duration-500" :class="{ 'scale-95 opacity-50 blur-sm pointer-events-none grayscale': isSidebarOpen }">
             
-            <section id="home" class="relative w-full h-[300vh] bg-klein-blue text-white">
+            <!-- CHANGED: Reduced height from 300vh to 180vh for faster transition -->
+            <section id="home" class="relative w-full h-[180vh] bg-klein-blue text-white">
                 <div class="sticky top-0 w-full h-screen overflow-hidden">
                     <div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-auto" id="magnetic-wrapper">
                          <div id="magnetic-container" class="w-full h-full relative cursor-crosshair"></div>
@@ -398,8 +399,8 @@
                 </div>
             </section>
 
-            <!-- About Banner -->
-            <section class="w-full h-[120vh] bg-[#020202] text-white flex items-center justify-center relative overflow-hidden z-20">
+            <!-- CHANGED: Reduced height from 120vh to 60vh to reduce dead space -->
+            <section class="w-full h-[60vh] bg-[#020202] text-white flex items-center justify-center relative overflow-hidden z-20">
                 <div class="w-full transform scale-50 opacity-0 transition-transform duration-100 ease-out" id="creative-banner">
                     <h2 class="text-[12vw] font-black text-center leading-none tracking-tighter text-white mix-blend-difference">
                         ABOUT<br>ME
@@ -1290,7 +1291,8 @@
                 };
 
                 onMounted(async () => {
-                    setTimeout(() => { finishBootSequence(); }, 2500);
+                    // CHANGED: Reduced from 2500 to 1500 for faster boot
+                    setTimeout(() => { finishBootSequence(); }, 1500);
                     initMagneticLogo();
                     lucide.createIcons();
                     resolveTheme(); 
@@ -1331,24 +1333,25 @@
                             id: "photos-trigger",
                             trigger: "#photos",
                             start: "top top",
-                            end: "+=4000", 
+                            // CHANGED: Reduced from +=4000 to +=2000 for significantly faster animation
+                            end: "+=2000", 
                             pin: true,
                             scrub: 1, 
                         }
                     });
 
-                    // 1. Vines/Lines (0% -> ~2%)
+                    // 1. Vines/Lines
                     if (waves) {
                         gsap.to(waves, { amplitude: 1, duration: 5 });
                         photosTimeline.to(waves, { 
                             progress: 1, 
-                            duration: 100, 
+                            duration: 50, // Reduced relative duration
                             ease: "power1.inOut"
                         });
                     }
 
-                    // 2. Reveal Title (Faster Duration: 20)
-                    photosTimeline.addLabel("reveal", "-=80");
+                    // 2. Reveal Title (Significantly faster)
+                    photosTimeline.addLabel("reveal", "-=40");
 
                     photosTimeline.call(() => {
                         photosActive.value = true;
@@ -1364,24 +1367,21 @@
                         scaleY: 1, 
                         opacity: 0.12, 
                         filter: "blur(0px)",
-                        duration: 20, 
+                        duration: 15, // Reduced from 20
                         ease: "power2.out"
                     }, "reveal");
 
-                    // 3. Quote Appear (Reduced: 10)
-                    photosTimeline.to(".gallery-quote", { opacity: 1, duration: 10 }, "-=5");
+                    // 3. Quote Appear (Faster overlapping)
+                    photosTimeline.to(".gallery-quote", { opacity: 1, duration: 8 }, "-=10");
 
-                    // 4. Transition to Grid
-                    photosTimeline.to(".gallery-quote", { opacity: 0, y: -50, duration: 5 }, "+=5");
+                    // 4. Transition to Grid (Faster exit)
+                    photosTimeline.to(".gallery-quote", { opacity: 0, y: -50, duration: 5 }, "+=2");
                     photosTimeline.to(".gallery-title", { opacity: 0, y: -100, duration: 5 }, "<");
                     
-                    // 5. Grid Entry (Faster: 25)
+                    // 5. Grid Entry
                     photosTimeline.addLabel("gridEntry");
                     
-                    // Toggle gridActive state for line opacity. 
-                    // Set to TRUE when grid enters.
                     photosTimeline.call(() => { gridActive.value = true; }, null, "gridEntry");
-                    // Revert to FALSE if scrubbing backwards past this point
                     photosTimeline.call(() => { 
                         if(photosTimeline.scrollTrigger.direction < 0) gridActive.value = false; 
                     }, null, "gridEntry-=0.1");
@@ -1389,36 +1389,32 @@
                     photosTimeline.to(".photos-grid", { 
                         y: 0, 
                         opacity: 1, 
-                        duration: 25, 
+                        duration: 15, // Reduced from 25
                         ease: "power3.out" 
                     }, "gridEntry");
 
-                    // 6. Staggered Card Entries
-                    // Target the WRAPPER for entry, so the inner card is free for hover
+                    // 6. Staggered Card Entries (Tighter stagger)
                     if (sortedPhotoCards.length > 0) {
                         sortedPhotoCards.forEach((wrapper, index) => {
-                            const offset = index * 2; 
+                            const offset = index * 1.5; // Tighter offset
                             photosTimeline.fromTo(wrapper, 
                                 { opacity: 0, y: 150 }, 
-                                { opacity: 1, y: 0, duration: 20, ease: "power3.out" }, 
-                                `>-${18 - offset}` 
+                                { opacity: 1, y: 0, duration: 15, ease: "power3.out" }, 
+                                `>-${12 - offset}` 
                             );
                         });
                     }
 
-                    // 7. PAUSE to view content (Increased to 60)
-                    photosTimeline.to({}, { duration: 60 });
+                    // 7. PAUSE (REMOVED: Was duration 60, now 10 to just give a breath)
+                    photosTimeline.to({}, { duration: 10 });
 
-                    // 8. Grid Scroll (Slower scroll: 80)
+                    // 8. Grid Scroll
                     photosTimeline.to(".photos-grid", {
                         y: "-40%",
-                        duration: 80, 
+                        duration: 60, // Reduced from 80
                         ease: "none" 
                     });
                     
-                    // Added Margin Pause before Exit (Extra Duration: 40)
-                    photosTimeline.to({}, { duration: 40 });
-
                     // 9. Exit
                     photosTimeline.to(".photos-grid", {
                         y: "-100%", 
