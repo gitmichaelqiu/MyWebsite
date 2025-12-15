@@ -369,8 +369,8 @@
 
         <main class="transition-all duration-500" :class="{ 'scale-95 opacity-50 blur-sm pointer-events-none grayscale': isSidebarOpen }">
             
-            <!-- CHANGED: Reduced height from 300vh to 180vh for faster transition -->
-            <section id="home" class="relative w-full h-[180vh] bg-klein-blue text-white">
+            <!-- CHANGED: Increased from 180vh to 200vh to give text more space -->
+            <section id="home" class="relative w-full h-[200vh] bg-klein-blue text-white">
                 <div class="sticky top-0 w-full h-screen overflow-hidden">
                     <div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-auto" id="magnetic-wrapper">
                          <div id="magnetic-container" class="w-full h-full relative cursor-crosshair"></div>
@@ -937,13 +937,15 @@
                             magContainer.style.transform = `scale(${1 - fadeProgress * 0.1})`; 
                         }
                         if(heroText) {
-                            const moveProgress = Math.min(1, scrollTop / (winHeight * 1.5)); 
+                            // CHANGED: Tuned progress calculation to complete animation faster
+                            const moveProgress = Math.min(1, scrollTop / (winHeight * 1.2)); 
                             const targetY = -winHeight * 0.45 * moveProgress; 
                             const targetScale = 1 + (moveProgress * 0.3); 
                             heroText.style.transform = `translateY(${targetY}px) scale(${targetScale})`;
                             if(introText) {
-                                if (moveProgress > 0.8) {
-                                    const textFade = (moveProgress - 0.8) / 0.2;
+                                // CHANGED: Fade in earlier (at 0.4 progress instead of 0.8)
+                                if (moveProgress > 0.4) {
+                                    const textFade = (moveProgress - 0.4) / 0.6;
                                     introText.style.opacity = textFade;
                                 } else {
                                     introText.style.opacity = 0;
@@ -1333,8 +1335,8 @@
                             id: "photos-trigger",
                             trigger: "#photos",
                             start: "top top",
-                            // CHANGED: Reduced from +=4000 to +=2000 for significantly faster animation
-                            end: "+=2000", 
+                            // CHANGED: Increased to 3500 for better pacing
+                            end: "+=3500", 
                             pin: true,
                             scrub: 1, 
                         }
@@ -1371,11 +1373,14 @@
                         ease: "power2.out"
                     }, "reveal");
 
-                    // 3. Quote Appear (Faster overlapping)
-                    photosTimeline.to(".gallery-quote", { opacity: 1, duration: 8 }, "-=10");
+                    // 3. Quote Appear (Longer duration)
+                    photosTimeline.to(".gallery-quote", { opacity: 1, duration: 15 }, "-=5");
+                    
+                    // CHANGED: Added pause to let user read quote
+                    photosTimeline.to({}, { duration: 30 }); 
 
                     // 4. Transition to Grid (Faster exit)
-                    photosTimeline.to(".gallery-quote", { opacity: 0, y: -50, duration: 5 }, "+=2");
+                    photosTimeline.to(".gallery-quote", { opacity: 0, y: -50, duration: 10 }, "+=2");
                     photosTimeline.to(".gallery-title", { opacity: 0, y: -100, duration: 5 }, "<");
                     
                     // 5. Grid Entry
@@ -1409,12 +1414,16 @@
                     photosTimeline.to({}, { duration: 10 });
 
                     // 8. Grid Scroll
+                    // CHANGED: Increased duration to 120 so it feels substantial
                     photosTimeline.to(".photos-grid", {
                         y: "-40%",
-                        duration: 60, // Reduced from 80
+                        duration: 120, 
                         ease: "none" 
                     });
                     
+                    // CHANGED: Added substantial pause before exit to prevent accidental triggering
+                    photosTimeline.to({}, { duration: 50 }); 
+
                     // 9. Exit
                     photosTimeline.to(".photos-grid", {
                         y: "-100%", 
