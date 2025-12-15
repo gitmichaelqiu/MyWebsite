@@ -213,16 +213,22 @@
         #photos.photos-active.light-mode .gallery-quote { color: #002FA7; }
         #photos.photos-active.dark-mode .gallery-title { color: rgba(255, 255, 255, 0.1); }
 
+        /* Wave Component Styles */
         a-waves {
             --x: -0.5rem;
             --y: 50%;
+            /* Initialize variable for dash offset (from work.html) */
+            --dash-offset: 4000;
             position: absolute; top: 0; left: 0; margin: 0; padding: 0;
             width: 100%; height: 100%; overflow: hidden; pointer-events: none; z-index: 0;
         }
         a-waves:before { content: none !important; display: none !important; }
         a-waves svg { display: block; width: 100%; height: 100%; }
         a-waves svg path {
-            fill: none; stroke-width: 1px; vector-effect: non-scaling-stroke; transition: stroke 1s ease;
+            fill: none; stroke-width: 1px; vector-effect: non-scaling-stroke; transition: stroke 0.5s ease;
+            stroke-dasharray: 4000;
+            /* Bind to CSS Variable (from work.html) */
+            stroke-dashoffset: var(--dash-offset);
         }
         
         /* Line Opacity Logic */
@@ -718,7 +724,9 @@
                     this.lines.push({ points, speed, threshold });
                     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     path.classList.add('a__line'); path.classList.add('js-line');
-                    path.style.strokeDasharray = `${this.maxLength}`; path.style.strokeDashoffset = `${this.maxLength}`; 
+                    path.style.strokeDasharray = `4000`; 
+                    // CHANGE: Use CSS variable for dash offset
+                    path.style.strokeDashoffset = `var(--dash-offset, 4000)`; 
                     this.svg.appendChild(path); this.paths.push(path);
                 }
             }
@@ -752,11 +760,8 @@
                     for (let i = lastIdx; i >= 0; i--) { const p = moved(points[i], true); d += `L ${p.x} ${p.y}`; }
                     if (paths[lIndex]) {
                         paths[lIndex].setAttribute('d', d);
-                        let relativeProgress = (this._progress - lineObj.threshold) / (1 - lineObj.threshold);
-                        let localProgress = relativeProgress * lineObj.speed;
-                        localProgress = Math.max(0, Math.min(1, localProgress));
-                        const offset = this.maxLength * (1 - localProgress);
-                        paths[lIndex].style.strokeDashoffset = offset;
+                        // CHANGE: Remove manual dash offset calculation here, rely on CSS variable
+                        // The offset logic is handled by GSAP timeline animating --dash-offset on the container
                     }
                 });
             }
@@ -1336,26 +1341,26 @@
                             id: "photos-trigger",
                             trigger: "#photos",
                             start: "top top",
-                            // CHANGED: Reduced to 3000 to match the scrubbing speed better
-                            end: "+=3000", 
+                            // CHANGED: Match work.html
+                            end: "+=5000", 
                             pin: true,
-                            // CHANGED: Lower scrub value makes it feel tighter/less laggy
-                            scrub: 0.5, 
+                            // CHANGED: Match work.html
+                            scrub: 1, 
                         }
                     });
 
-                    // 1. Vines/Lines
-                    if (waves) {
-                        gsap.to(waves, { amplitude: 1, duration: 5 });
-                        photosTimeline.to(waves, { 
-                            progress: 1, 
-                            duration: 50, 
-                            ease: "power1.inOut"
-                        });
-                    }
+                    // 1. Vines/Lines - Match work.html logic using CSS variables
+                    photosTimeline.to("a-waves", { 
+                        "--dash-offset": 0, 
+                        duration: 15, 
+                        ease: "power2.inOut",
+                        onStart: () => {
+                            if(waves) gsap.to(waves, { amplitude: 1, duration: 2 });
+                        }
+                    });
 
-                    // 2. Reveal Title (Significantly faster)
-                    photosTimeline.addLabel("reveal", "-=40");
+                    // 2. Reveal Title - Match work.html pacing
+                    photosTimeline.addLabel("reveal", "-=12");
 
                     photosTimeline.call(() => {
                         photosActive.value = true;
@@ -1371,20 +1376,18 @@
                         scaleY: 1, 
                         opacity: 0.12, 
                         filter: "blur(0px)",
-                        duration: 15, // Reduced from 20
-                        ease: "power2.out"
+                        duration: 10, // Match work.html
+                        ease: "power3.out"
                     }, "reveal");
 
-                    // 3. Quote Appear
-                    photosTimeline.to(".gallery-quote", { opacity: 1, duration: 15 }, "-=5");
-                    
-                    // CHANGED: Removed the pause to improve flow
+                    // 3. Quote Appear - Match work.html
+                    photosTimeline.to(".gallery-quote", { opacity: 1, duration: 10 }, "+=2");
 
-                    // 4. Transition to Grid
-                    photosTimeline.to(".gallery-quote", { opacity: 0, y: -50, duration: 10 }, "+=2");
-                    photosTimeline.to(".gallery-title", { opacity: 0, y: -100, duration: 5 }, "<");
+                    // 4. Transition to Grid - Match work.html
+                    photosTimeline.to(".gallery-quote", { opacity: 0, y: -50, duration: 10 }, "+=5");
+                    photosTimeline.to(".gallery-title", { opacity: 0, y: -100, duration: 10 }, "<");
                     
-                    // 5. Grid Entry
+                    // 5. Grid Entry - Match work.html
                     photosTimeline.addLabel("gridEntry");
                     
                     photosTimeline.call(() => { gridActive.value = true; }, null, "gridEntry");
@@ -1395,38 +1398,32 @@
                     photosTimeline.to(".photos-grid", { 
                         y: 0, 
                         opacity: 1, 
-                        duration: 15,
+                        duration: 10, // Match work.html
                         ease: "power3.out" 
                     }, "gridEntry");
 
-                    // 6. Staggered Card Entries (Tighter stagger)
+                    // 6. Staggered Card Entries - Match work.html logic but applied to wrappers
                     if (sortedPhotoCards.length > 0) {
                         sortedPhotoCards.forEach((wrapper, index) => {
-                            const offset = index * 1.5; 
+                            const offset = index * 2; // Match work.html
                             photosTimeline.fromTo(wrapper, 
-                                { opacity: 0, y: 150 }, 
-                                { opacity: 1, y: 0, duration: 15, ease: "power3.out" }, 
-                                `>-${12 - offset}` 
+                                { opacity: 0, y: 100 }, // Match work.html values
+                                { opacity: 1, y: 0, duration: 5, ease: "power3.out" }, // Match work.html duration
+                                `>-${9 - offset}` // Match work.html offset logic
                             );
                         });
                     }
 
-                    // 7. PAUSE Removed
-
-                    // 8. Grid Scroll
-                    // CHANGED: Adjusted duration for better physics feel with scrub 0.5
+                    // 7. Grid Scroll - Match work.html
                     photosTimeline.to(".photos-grid", {
-                        y: "-40%",
-                        duration: 150, 
+                        y: "-50%",
+                        duration: 35, // Match work.html
                         ease: "none" 
                     });
                     
-                    // CHANGED: Pause before exit
-                    photosTimeline.to({}, { duration: 50 }); 
-
-                    // 9. Exit
+                    // 8. Exit - Match work.html
                     photosTimeline.to(".photos-grid", {
-                        y: "-100%", 
+                        y: "-150%",  // Match work.html
                         opacity: 0,
                         filter: "blur(20px)",
                         scale: 0.8,
